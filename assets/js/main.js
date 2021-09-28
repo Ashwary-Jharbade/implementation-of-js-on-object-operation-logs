@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * @description: Function logs the operations calls on the object
  * @argument: Function accepts a parmeter of type 'String'
@@ -8,47 +10,24 @@ const logLocalStorage = (message) => {
     let key = new Date().getTime();
     localStorage.setItem(key.toString(), message);
   }
-  console.log(message);
-};
-
-// Custom event objects creation
-const objectDisplayEvent = new Event("objectDisplayEvent");
-const objectCreateEvent = new Event("objectCreateEvent");
-const objectReadEvent = new Event("objectReadEvent");
-const objectUpdateEvent = new Event("objectUpdateEvent");
-const objectExtensionEvent = new Event("objectExtensionEvent");
-const objectDeleteEvent = new Event("objectDeleteEvent");
-
-// Initializing an object with reuired custom events and messages
-const eventListObject = {
-  objectDisplayEvent: "Display method called.",
-  objectCreateEvent: "Create method called.",
-  objectReadEvent: "Read method called.",
-  objectUpdateEvent: "Update method called.",
-  objectExtensionEvent: "Extend method called.",
-  objectDeleteEvent: "Delete method called.",
-};
-
-// Adding defined event listeners to document object
-const addCustomEventListener = () => {
-  for (let i in eventListObject) {
-    document.addEventListener(i, logLocalStorage(eventListObject[i]))
-  }
-};
-
-// Function logs the passed parameter to the console
-const logRemovedEvent = (para) => {
-    console.log(`${para}: Event removed from the document object`);
-}
-
-// Removing custom eventlisteners from the documenmt object
-const removeCustomEventListener = () => {
-  for (let i in eventListObject) {
-    document.removeEventListener(i, logRemovedEvent(i));
-  }
 };
 
 // Utility methods
+
+/**
+ * @description: Function creates an immutable object
+ * @argument: Function accepts a parameter of type 'Object'
+ * @returns: Function returns boolean value
+ * */
+const createImmutableObject = (obj) => {
+  if (isValidObject(obj)) {
+    Object.freeze(obj);
+    logLocalStorage("Created an immutable object.");
+    return true;
+  }
+  logLocalStorage("Unable to create an immutable object!");
+  return false;
+};
 
 /**
  * @description: Function checks if the string is valid or not
@@ -86,18 +65,16 @@ const isKeyExists = (obj, key) => {
 const show = (obj) => {
   if (isValidObject(obj)) {
     console.log(obj);
-    document.dispatchEvent(objectDisplayEvent);
   } else
     console.log("Check if the provided paramter is an object and not null!");
 };
 
 /**
- * @description: Function created an object 
+ * @description: Function created an object
  * @argument: Function accepts a parmeter of type 'Obejct'
  * @returns: Function returns object
  * */
 const create = (obj) => {
-  document.dispatchEvent(objectCreateEvent);
   return obj;
 };
 
@@ -108,7 +85,6 @@ const create = (obj) => {
  * */
 const read = (obj, key) => {
   if (isKeyExists(obj, key)) {
-    document.dispatchEvent(objectDisplayEvent);
     return obj[key];
   }
   return null;
@@ -120,12 +96,24 @@ const read = (obj, key) => {
  * @returns: Function returns boolean value
  * */
 const update = (obj, key, value) => {
+  let result = false;
   if (isKeyExists(obj, key)) {
-    obj[key] = value;
-    document.dispatchEvent(objectUpdateEvent);
-    return true;
+    try {
+      obj[key] = value;
+    } catch (error) {
+      let obj = {
+        action: "Object update",
+        time: new Date(),
+        message: "Unable to update the property of an immutable object!",
+        error,
+      };
+      let message = JSON.stringify(obj);
+      logLocalStorage(message);
+      result = false;
+    }
+    result = true;
   }
-  return false;
+  return result;
 };
 
 /**
@@ -134,12 +122,24 @@ const update = (obj, key, value) => {
  * @returns: Function returns boolean value
  * */
 const deleteObject = (obj, key) => {
+  let result;
+  let message;
   if (isKeyExists(obj, key)) {
-    delete obj[key];
-    document.dispatchEvent(objectDeleteEvent);
-    return true;
+    result = delete obj[key];
+    if (!flag) {
+      message = "Unable to delete properties of an immutable object!";
+    }
+  } else {
+    message = "Key does not exists!";
   }
-  return false; 
+  let obj1 = {
+    action: "Object deletion",
+    time: new Date(),
+    message,
+  };
+  let state = JSON.stringify(obj1);
+  logLocalStorage(state);
+  return result;
 };
 
 /**
@@ -148,33 +148,42 @@ const deleteObject = (obj, key) => {
  * @returns: Function returns boolean value
  * */
 const extend = (obj, key, value) => {
+  let result = false;
   if (isValidObject(obj)) {
-    obj[key] = value;
-    document.dispatchEvent(objectExtensionEvent);
-    return true;
+    try {
+      obj[key] = value;
+    } catch (error) {
+      let obj = {
+        action: "Object extension",
+        time: new Date(),
+        message: "Unable to add properties to an immutable object!",
+        error,
+      };
+      let message = JSON.stringify(obj);
+      logLocalStorage(message);
+      result = false;
+    }
+    result = true;
   }
-  return false;
+  return result;
 };
 
-// Calls and creation 
-
-// Calling method to add custom eventlisteners
-addCustomEventListener();
+// Calls and creation
 
 let newobj = create({ name: "Charizard" });
 show(newobj); // o/p: {name: 'Charizard'}
 
-update(newobj,"name","Pikachu");
-show(newobj); // o/p: {name: 'Pikachu'}
+createImmutableObject(newobj);
+show(newobj); // o/p: {name: 'Charizard'}
 
-let readResult = read(newobj,"name");
-console.log(readResult) // o/p: Pikachu
+update(newobj, "name", "Pikachu");
+show(newobj); // o/p: {name: 'Charizard'}
 
-extend(newobj,"class","Pokemon");
-show(newobj); // o/p: {name: 'Pikachu', class: 'Pokemon'}
+let readResult = read(newobj, "name");
+console.log(readResult); // o/p: Charizard
 
-deleteObject(newobj,"class");
-show(newobj); // o/p: {name: 'Pikachu'}
+extend(newobj, "class", "Pokemon");
+show(newobj); // o/p: {name: 'Charizard'}
 
-// Calling method to remove custom eventlisteners
-removeCustomEventListener();
+deleteObject(newobj, "class");
+show(newobj); // o/p: {name: 'Charizard'}
