@@ -77,6 +77,7 @@ const isValidObject = (obj) => {
  * */
 const isKeyExists = (obj, key) => {
   if (isValidObject(obj) && isValidString(key)) return obj.hasOwnProperty(key);
+  return false;
 };
 
 /**
